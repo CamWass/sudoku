@@ -295,8 +295,6 @@ impl Solver {
         let speculation_state = self.speculation_stack.last_mut().unwrap();
         let board = &mut speculation_state.board;
 
-        let mut possible_moves = vec![];
-
         let mut made_move = true;
 
         while made_move {
@@ -308,17 +306,20 @@ impl Solver {
 
                 let square = Square(square);
 
-                possible_moves.clear();
+                let mut possible_moves = 0_u8;
+                let mut possible_move = None;
 
                 let moves = board.get_moves_for_square(square);
                 for i in 1_u8..10 {
                     if moves & 1 << i != 0 {
-                        possible_moves.push(i);
+                        possible_moves += 1;
+
+                        possible_move = Some(i);
                     }
                 }
 
-                if possible_moves.len() == 1 {
-                    board.inner[square.0] = possible_moves[0];
+                if possible_moves == 1 {
+                    board.inner[square.0] = possible_move.unwrap();
                     made_move = true;
                     speculation_state.empty_squares -= 1;
                 }
