@@ -182,166 +182,50 @@ impl Iterator for BlockIter {
     }
 }
 
-fn main() {
-    let mut board = Board { inner: INPUT2 };
+struct Solver {
+    board: Board,
+}
 
-    println!("Input:");
-    board.print();
+impl Solver {
+    fn solve(&mut self) {
+        let mut possible_moves = vec![];
 
-    let mut possible_moves = vec![];
+        let mut made_move = true;
 
-    let mut made_move = true;
+        while made_move {
+            made_move = false;
+            for square in 0..self.board.inner.len() {
+                if self.board.inner[square] != 0 {
+                    continue;
+                }
 
-    let mut placed = 0;
+                let square = Square(square);
 
-    while made_move {
-        made_move = false;
-        for square in 0..board.inner.len() {
-            if board.inner[square] != 0 {
-                continue;
-            }
+                possible_moves.clear();
 
-            let square = Square(square);
+                let moves = self.board.get_moves_for_square(square);
+                for i in 1_u8..10 {
+                    if moves & 1 << i != 0 {
+                        possible_moves.push(i);
+                    }
+                }
 
-            possible_moves.clear();
-
-            let moves = board.get_moves_for_square(square);
-            for i in 1_u8..10 {
-                if moves & 1 << i != 0 {
-                    possible_moves.push(i);
+                if possible_moves.len() == 1 {
+                    self.board.inner[square.0] = possible_moves[0];
+                    made_move = true;
                 }
             }
 
-            if possible_moves.len() == 1 {
-                board.inner[square.0] = possible_moves[0];
-                made_move = true;
-                placed += 1;
-            }
-        }
-
-        // Try fill rows
-        for row in 0..9_u8 {
-            let row_start = row * 9;
-
-            let mut present = 0_u16;
-
-            for col in 0..9_u8 {
-                let square = row_start + col;
-
-                present |= 1 << board.inner[square as usize];
-            }
-
-            for i in 1..10_u8 {
-                if present & 1 << i == 0 {
-                    // Missing
-
-                    // The first 9 bits are flags for whether the missing number
-                    // can be placed in that i-th square.
-                    let mut can_place = u16::MAX;
-
-                    for col in 0..9_u8 {
-                        let square = (row_start + col) as usize;
-
-                        if board.inner[square] != 0 {
-                            can_place &= !(1 << col);
-                            continue;
-                        }
-
-                        let square = Square(square);
-
-                        for v in board.get_col_for_square(square) {
-                            if v == i {
-                                can_place &= !(1 << col);
-                            }
-                        }
-
-                        for v in board.get_block_for_square(square) {
-                            if v == i {
-                                can_place &= !(1 << col);
-                            }
-                        }
-                    }
-
-                    // We want one bit set, but the last 7 bits will always be one.
-                    // So there will always be 7 ones.
-                    if can_place.count_ones() == 1 + 7 {
-                        let index = can_place.trailing_zeros();
-
-                        board.inner[(row_start as usize + index as usize)] = i;
-                        made_move = true;
-                        placed += 1;
-                    }
-                }
-            }
-        }
-
-        // Try fill columns
-        for col_start in 0..9_u8 {
-            let start_square = Square(col_start as usize);
-            let col = board.get_col_for_square(start_square);
-
-            let mut present = 0_u16;
-
-            for v in col {
-                present |= 1 << v;
-            }
-
-            for i in 1..10_u8 {
-                if present & 1 << i == 0 {
-                    // Missing
-
-                    // The first 9 bits are flags for whether the missing number
-                    // can be placed in that i-th square.
-                    let mut can_place = u16::MAX;
-
-                    for row in 0..9_u8 {
-                        let row_start = row * 9;
-                        let square = (row_start + col_start) as usize;
-
-                        if board.inner[square] != 0 {
-                            can_place &= !(1 << row);
-                            continue;
-                        }
-
-                        let square = Square(square);
-
-                        for &v in board.get_row_for_square(square) {
-                            if v == i {
-                                can_place &= !(1 << row);
-                            }
-                        }
-
-                        for v in board.get_block_for_square(square) {
-                            if v == i {
-                                can_place &= !(1 << row);
-                            }
-                        }
-                    }
-
-                    // We want one bit set, but the last 7 bits will always be one.
-                    // So there will always be 7 ones.
-                    if can_place.count_ones() == 1 + 7 {
-                        let index = can_place.trailing_zeros();
-
-                        let row_start = index * 9;
-
-                        board.inner[(row_start as usize + col_start as usize)] = i;
-                        made_move = true;
-                        placed += 1;
-                    }
-                }
-            }
-        }
-
-        // Try fill blocks
-        for x in 0..3 {
-            for y in 0..3 {
-                let block = board.get_block(x, y);
+            // Try fill rows
+            for row in 0..9_u8 {
+                let row_start = row * 9;
 
                 let mut present = 0_u16;
 
-                for square in block {
-                    present |= 1 << board.inner[square.0];
+                for col in 0..9_u8 {
+                    let square = row_start + col;
+
+                    present |= 1 << self.board.inner[square as usize];
                 }
 
                 for i in 1..10_u8 {
@@ -352,23 +236,25 @@ fn main() {
                         // can be placed in that i-th square.
                         let mut can_place = u16::MAX;
 
-                        let block = board.get_block(x, y);
+                        for col in 0..9_u8 {
+                            let square = (row_start + col) as usize;
 
-                        for (block_idx, square) in block.enumerate() {
-                            if board.inner[square.0] != 0 {
-                                can_place &= !(1 << block_idx);
+                            if self.board.inner[square] != 0 {
+                                can_place &= !(1 << col);
                                 continue;
                             }
 
-                            for &v in board.get_row_for_square(square) {
+                            let square = Square(square);
+
+                            for v in self.board.get_col_for_square(square) {
                                 if v == i {
-                                    can_place &= !(1 << block_idx);
+                                    can_place &= !(1 << col);
                                 }
                             }
 
-                            for v in board.get_col_for_square(square) {
+                            for v in self.board.get_block_for_square(square) {
                                 if v == i {
-                                    can_place &= !(1 << block_idx);
+                                    can_place &= !(1 << col);
                                 }
                             }
                         }
@@ -377,31 +263,156 @@ fn main() {
                         // So there will always be 7 ones.
                         if can_place.count_ones() == 1 + 7 {
                             let index = can_place.trailing_zeros();
-                            let square = board.get_block(x, y).nth(index as usize).unwrap();
 
-                            board.inner[square.0] = i;
+                            self.board.inner[(row_start as usize + index as usize)] = i;
                             made_move = true;
-                            placed += 1;
+                        }
+                    }
+                }
+            }
+
+            // Try fill columns
+            for col_start in 0..9_u8 {
+                let start_square = Square(col_start as usize);
+                let col = self.board.get_col_for_square(start_square);
+
+                let mut present = 0_u16;
+
+                for v in col {
+                    present |= 1 << v;
+                }
+
+                for i in 1..10_u8 {
+                    if present & 1 << i == 0 {
+                        // Missing
+
+                        // The first 9 bits are flags for whether the missing number
+                        // can be placed in that i-th square.
+                        let mut can_place = u16::MAX;
+
+                        for row in 0..9_u8 {
+                            let row_start = row * 9;
+                            let square = (row_start + col_start) as usize;
+
+                            if self.board.inner[square] != 0 {
+                                can_place &= !(1 << row);
+                                continue;
+                            }
+
+                            let square = Square(square);
+
+                            for &v in self.board.get_row_for_square(square) {
+                                if v == i {
+                                    can_place &= !(1 << row);
+                                }
+                            }
+
+                            for v in self.board.get_block_for_square(square) {
+                                if v == i {
+                                    can_place &= !(1 << row);
+                                }
+                            }
+                        }
+
+                        // We want one bit set, but the last 7 bits will always be one.
+                        // So there will always be 7 ones.
+                        if can_place.count_ones() == 1 + 7 {
+                            let index = can_place.trailing_zeros();
+
+                            let row_start = index * 9;
+
+                            self.board.inner[(row_start as usize + col_start as usize)] = i;
+                            made_move = true;
+                        }
+                    }
+                }
+            }
+
+            // Try fill blocks
+            for x in 0..3 {
+                for y in 0..3 {
+                    let block = self.board.get_block(x, y);
+
+                    let mut present = 0_u16;
+
+                    for square in block {
+                        present |= 1 << self.board.inner[square.0];
+                    }
+
+                    for i in 1..10_u8 {
+                        if present & 1 << i == 0 {
+                            // Missing
+
+                            // The first 9 bits are flags for whether the missing number
+                            // can be placed in that i-th square.
+                            let mut can_place = u16::MAX;
+
+                            let block = self.board.get_block(x, y);
+
+                            for (block_idx, square) in block.enumerate() {
+                                if self.board.inner[square.0] != 0 {
+                                    can_place &= !(1 << block_idx);
+                                    continue;
+                                }
+
+                                for &v in self.board.get_row_for_square(square) {
+                                    if v == i {
+                                        can_place &= !(1 << block_idx);
+                                    }
+                                }
+
+                                for v in self.board.get_col_for_square(square) {
+                                    if v == i {
+                                        can_place &= !(1 << block_idx);
+                                    }
+                                }
+                            }
+
+                            // We want one bit set, but the last 7 bits will always be one.
+                            // So there will always be 7 ones.
+                            if can_place.count_ones() == 1 + 7 {
+                                let index = can_place.trailing_zeros();
+                                let square =
+                                    self.board.get_block(x, y).nth(index as usize).unwrap();
+
+                                self.board.inner[square.0] = i;
+                                made_move = true;
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
+
+fn main() {
+    let input = &INPUT3;
+    let mut solver = Solver {
+        board: Board { inner: *input },
+    };
+
+    println!("Input:");
+    solver.board.print();
+
+    solver.solve();
 
     println!("Output:");
-    board.print();
+    solver.board.print();
 
-    if board.is_solved() {
+    if solver.board.is_solved() {
         println!("Solved puzzle");
     } else {
-        let empty_squares = board.inner.iter().filter(|s| **s == 0).count();
+        let old_empty_squares = input.iter().filter(|s| **s == 0).count();
+        let new_empty_squares = solver.board.inner.iter().filter(|s| **s == 0).count();
+
+        let placed = old_empty_squares - new_empty_squares;
 
         println!(
             "Could not solve puzzle. {} empty squares remaining (placed {})",
-            empty_squares, placed
+            new_empty_squares, placed
         );
     }
 
-    debug_assert!(board.inner == OUTPUT2);
+    debug_assert!(solver.board.inner == OUTPUT3);
 }
