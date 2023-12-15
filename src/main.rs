@@ -39,6 +39,10 @@ struct Board {
 }
 
 impl Board {
+    fn empty_squares(&self) -> usize {
+        self.inner.iter().filter(|s| **s == 0).count()
+    }
+
     // Returns true if the board is in  a solved state.
     fn is_solved(&self) -> bool {
         for i in 0..self.inner.len() {
@@ -217,7 +221,7 @@ struct Solver {
 impl Solver {
     fn solve(&mut self, input: Board) {
         self.speculation_stack.push(SpeculationState {
-            empty_squares: input.inner.iter().filter(|s| **s == 0).count(),
+            empty_squares: input.empty_squares(),
             board: input,
             tried_moves: [0; 81],
         });
@@ -514,8 +518,8 @@ fn main() {
     if board.is_solved() {
         println!("Solved puzzle");
     } else {
-        let old_empty_squares = input.inner.iter().filter(|s| **s == 0).count();
-        let new_empty_squares = board.inner.iter().filter(|s| **s == 0).count();
+        let old_empty_squares = input.empty_squares();
+        let new_empty_squares = board.empty_squares();
 
         let placed = old_empty_squares - new_empty_squares;
 
