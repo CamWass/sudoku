@@ -2,9 +2,7 @@
 
 extern crate test;
 
-mod puzzles;
-
-use crate::puzzles::*;
+use data::*;
 use solver::{Board, Solver};
 
 fn main() {
