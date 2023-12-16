@@ -224,21 +224,15 @@ impl Solver {
             return self.speculation_stack.pop().unwrap().board;
         }
 
-        let mut bad_speculations = 0usize;
-        let mut max_stack_size = 0;
-
         loop {
             loop {
                 if let Some(new) = self.get_speculation() {
                     self.speculation_stack.push(new);
-                    if self.speculation_stack.len() > max_stack_size {
-                        max_stack_size = self.speculation_stack.len();
-                    }
+
                     break;
                 } else {
                     debug_assert!(self.speculation_stack.len() > 1);
                     self.speculation_stack.pop();
-                    bad_speculations += 1;
                 }
             }
 
@@ -247,11 +241,6 @@ impl Solver {
             if self.is_solved() {
                 return self.speculation_stack.pop().unwrap().board;
             }
-
-            // if bad_speculations % 2048 == 0 {
-            //     println!("bad_speculations: {}", bad_speculations);
-            //     println!("max_stack_size: {}", max_stack_size);
-            // }
         }
     }
 
