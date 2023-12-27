@@ -22,7 +22,7 @@ fn main() {
     println!("Input:");
     input.print();
 
-    let board = solve(input);
+    let board = solve(input, true);
 
     println!("Output:");
     board.print();

@@ -214,7 +214,7 @@ impl SpeculationState {
     }
 }
 
-pub fn solve(input: Board) -> Board {
+pub fn solve(input: Board, print_dbg: bool) -> Board {
     let mut initial = SpeculationState {
         empty_squares: input.empty_squares(),
         board: input,
@@ -251,10 +251,12 @@ pub fn solve(input: Board) -> Board {
         }
     }
 
-    println!(
-        "Number of initial states to explore: {}",
-        initial_states.len()
-    );
+    if print_dbg {
+        println!(
+            "Number of initial states to explore: {}",
+            initial_states.len()
+        );
+    }
 
     let solved = AtomicBool::new(false);
 
@@ -264,7 +266,9 @@ pub fn solve(input: Board) -> Board {
         }
         let result = Solver::default().solve(initial, &solved);
         if result.is_some() {
-            println!("Found solution");
+            if print_dbg {
+                println!("Found solution");
+            }
             solved.store(true, Ordering::SeqCst);
         }
         result

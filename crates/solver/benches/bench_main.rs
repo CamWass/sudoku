@@ -5,7 +5,7 @@ use solver::*;
 fn test_solve(puzzle: [u8; 81]) {
     let input = Board { inner: puzzle };
 
-    let board = solve(input);
+    let board = solve(input, false);
 
     black_box(&board);
 }
