@@ -1,14 +1,28 @@
 use data::*;
-use solver::{Board, Solver};
+use solver::{solve, Board};
+
+#[rustfmt::skip] 
+pub static INPUT: [u8; 81] = [
+    0,0,0, 0,0,0, 0,0,0,
+    0,0,0, 0,0,0, 0,0,0,
+    0,0,0, 0,0,0, 6,0,0,
+
+    0,0,0, 0,9,0, 0,0,0,
+    0,0,0, 0,0,0, 0,0,0,
+    0,0,0, 0,4,0, 0,6,0,
+
+    0,0,0, 0,0,0, 0,0,0,
+    0,0,0, 0,0,0, 0,0,0,
+    0,0,0, 0,0,0, 0,0,0,
+];
 
 fn main() {
-    let input = Board { inner: INPUT3 };
-    let mut solver = Solver::default();
+    let input = Board { inner: INPUT };
 
     println!("Input:");
     input.print();
 
-    let board = solver.solve(input);
+    let board = solve(input);
 
     println!("Output:");
     board.print();
@@ -27,5 +41,5 @@ fn main() {
         );
     }
 
-    debug_assert!(board.inner == OUTPUT3);
+    // debug_assert!(board.inner == OUTPUT3);
 }

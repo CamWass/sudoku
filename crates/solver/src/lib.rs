@@ -1,3 +1,6 @@
+use rayon::prelude::*;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 /*
 Pick square
 choose number not in row/column/box
@@ -205,41 +208,113 @@ struct SpeculationState {
     empty_squares: usize,
 }
 
+impl SpeculationState {
+    fn is_solved(&self) -> bool {
+        self.empty_squares == 0
+    }
+}
+
+pub fn solve(input: Board) -> Board {
+    let mut initial = SpeculationState {
+        empty_squares: input.empty_squares(),
+        board: input,
+        tried_moves: [0; 81],
+    };
+
+    Solver::place_obvious(&mut initial);
+
+    if initial.is_solved() {
+        return initial.board;
+    }
+
+    // TODO: don't need to initialise this with the full states, just the modifications necessary to obtain them from the input.
+    let mut initial_states = Vec::new();
+
+    for square in 0..initial.board.inner.len() {
+        if initial.board.inner[square] != 0 {
+            continue;
+        }
+
+        let square = Square(square);
+
+        let moves = initial.board.get_moves_for_square(square);
+        for i in 1_u8..10 {
+            if moves & 1 << i != 0 {
+                let mut board = initial.board;
+                board.inner[square.0] = i;
+                initial_states.push(SpeculationState {
+                    empty_squares: initial.empty_squares - 1,
+                    board,
+                    tried_moves: initial.tried_moves,
+                });
+            }
+        }
+    }
+
+    println!(
+        "Number of initial states to explore: {}",
+        initial_states.len()
+    );
+
+    let solved = AtomicBool::new(false);
+
+    let result = initial_states.into_par_iter().find_map_any(|initial| {
+        if solved.load(Ordering::SeqCst) {
+            return None;
+        }
+        let result = Solver::default().solve(initial, &solved);
+        if result.is_some() {
+            println!("Found solution");
+            solved.store(true, Ordering::SeqCst);
+        }
+        result
+    });
+
+    match result {
+        Some(res) => res,
+        None => initial.board,
+    }
+}
+
 #[derive(Default)]
 pub struct Solver {
     speculation_stack: Vec<SpeculationState>,
 }
 
 impl Solver {
-    pub fn solve(&mut self, input: Board) -> Board {
-        self.speculation_stack.push(SpeculationState {
-            empty_squares: input.empty_squares(),
-            board: input,
-            tried_moves: [0; 81],
-        });
+    fn solve(&mut self, mut initial: SpeculationState, solved: &AtomicBool) -> Option<Board> {
+        Solver::place_obvious(&mut initial);
 
-        self.place_obvious();
-
-        if self.is_solved() {
-            return self.speculation_stack.pop().unwrap().board;
+        if initial.is_solved() {
+            return Some(initial.board);
         }
 
+        self.speculation_stack.push(initial);
+
         loop {
+            if solved.load(Ordering::SeqCst) {
+                return None;
+            }
+
             loop {
                 if let Some(new) = self.get_speculation() {
                     self.speculation_stack.push(new);
 
                     break;
                 } else {
-                    debug_assert!(self.speculation_stack.len() > 1);
                     self.speculation_stack.pop();
+                    if self.speculation_stack.is_empty() {
+                        return None;
+                    }
                 }
             }
 
-            self.place_obvious();
+            let state = self.speculation_stack.last_mut().unwrap();
 
-            if self.is_solved() {
-                return self.speculation_stack.pop().unwrap().board;
+            Solver::place_obvious(state);
+
+            if state.is_solved() {
+                return Some(state.board);
             }
         }
     }
@@ -272,12 +347,7 @@ impl Solver {
         None
     }
 
-    fn is_solved(&self) -> bool {
-        self.speculation_stack.last().unwrap().empty_squares == 0
-    }
-
-    fn place_obvious(&mut self) {
-        let speculation_state = self.speculation_stack.last_mut().unwrap();
+    fn place_obvious(speculation_state: &mut SpeculationState) {
         let board = &mut speculation_state.board;
 
         let mut made_move = true;

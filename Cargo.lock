@@ -420,6 +420,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "data",
+ "rayon",
 ]
 
 [[package]]
