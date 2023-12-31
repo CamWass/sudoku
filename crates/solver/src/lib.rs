@@ -38,7 +38,7 @@ impl Board {
         self.inner.iter().filter(|s| **s == 0).count()
     }
 
-    // Returns true if the board is in  a solved state.
+    // Returns true if the board is in a solved state.
     pub fn is_solved(&self) -> bool {
         for i in 0..self.inner.len() {
             let s = Square(i);
