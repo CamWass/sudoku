@@ -227,8 +227,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
         return initial.board;
     }
 
-    // TODO: don't need to initialise this with the full states, just the modifications necessary to obtain them from the input.
-    let mut initial_states = Vec::new();
+    let mut initial_moves = Vec::new();
 
     for square in 0..initial.board.inner.len() {
         if initial.board.inner[square] != 0 {
@@ -242,11 +241,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
             if moves & 1 << i != 0 {
                 let mut board = initial.board;
                 board.inner[square.0] = i;
-                initial_states.push(SpeculationState {
-                    empty_squares: initial.empty_squares - 1,
-                    board,
-                    tried_moves: initial.tried_moves,
-                });
+                initial_moves.push((square.0, i));
             }
         }
     }
@@ -254,17 +249,24 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
     if print_dbg {
         println!(
             "Number of initial states to explore: {}",
-            initial_states.len()
+            initial_moves.len()
         );
     }
 
     let solved = AtomicBool::new(false);
 
-    let result = initial_states.into_par_iter().find_map_any(|initial| {
+    let result = initial_moves.into_par_iter().find_map_any(|initial_move| {
         if solved.load(Ordering::SeqCst) {
             return None;
         }
-        let result = Solver::default().solve(initial, &solved);
+        let mut board = initial.board;
+        board.inner[initial_move.0] = initial_move.1;
+        let initial_state = SpeculationState {
+            board,
+            tried_moves: initial.tried_moves,
+            empty_squares: initial.empty_squares - 1,
+        };
+        let result = Solver::default().solve(initial_state, &solved);
         if result.is_some() {
             if print_dbg {
                 println!("Found solution");
