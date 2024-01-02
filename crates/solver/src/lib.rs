@@ -34,8 +34,6 @@ TODO: Could we maintain explicit allowed (or disallowed) moves for each empty sq
 Currently we calculate/check them a LOT compared to how often they are changed.
 Making a move can only affect empty squares in the current row/column,block
 
-TODO: u8 for square index instead of usize?
-
 */
 
 #[derive(Clone, Copy)]
