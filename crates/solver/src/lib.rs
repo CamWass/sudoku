@@ -444,7 +444,7 @@ impl Solver {
                         if can_place.count_ones() == 1 + 7 {
                             let index = can_place.trailing_zeros();
 
-                            board.inner[(row_start as usize + index as usize)] = i;
+                            board.inner[row_start as usize + index as usize] = i;
                             made_move = true;
                             speculation_state.empty_squares -= 1;
                         }
@@ -502,7 +502,7 @@ impl Solver {
 
                             let row_start = index * 9;
 
-                            board.inner[(row_start as usize + col_start as usize)] = i;
+                            board.inner[row_start as usize + col_start as usize] = i;
                             made_move = true;
                             speculation_state.empty_squares -= 1;
                         }
