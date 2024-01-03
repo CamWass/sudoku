@@ -446,20 +446,20 @@ impl Solver {
 
                         // The first 9 bits are flags for whether the missing number
                         // can be placed in that i-th square.
-                        let mut can_place = u16::MAX;
+                        let mut can_place = [true; 9];
 
                         for col in 0..9_u8 {
                             let square = (row_start + col) as usize;
 
                             if state.valid_moves[square] & 1 << i == 0 {
-                                can_place &= !(1 << col);
+                                can_place[col as usize] = false;
                             }
                         }
 
                         // We want one bit set, but the last 7 bits will always be one.
                         // So there will always be 7 ones.
-                        if can_place.count_ones() == 1 + 7 {
-                            let index = can_place.trailing_zeros();
+                        if can_place.iter().filter(|f| **f).count() == 1 {
+                            let index = can_place.iter().position(|f| *f).unwrap();
 
                             state.make_move(row_start as usize + index as usize, i);
                             made_move = true;
@@ -485,21 +485,21 @@ impl Solver {
 
                         // The first 9 bits are flags for whether the missing number
                         // can be placed in that i-th square.
-                        let mut can_place = u16::MAX;
+                        let mut can_place = [true; 9];
 
                         for row in 0..9_u8 {
                             let row_start = row * 9;
                             let square = (row_start + col_start) as usize;
 
                             if state.valid_moves[square] & 1 << i == 0 {
-                                can_place &= !(1 << row);
+                                can_place[row as usize] = false;
                             }
                         }
 
                         // We want one bit set, but the last 7 bits will always be one.
                         // So there will always be 7 ones.
-                        if can_place.count_ones() == 1 + 7 {
-                            let index = can_place.trailing_zeros();
+                        if can_place.iter().filter(|f| **f).count() == 1 {
+                            let index = can_place.iter().position(|f| *f).unwrap();
 
                             let row_start = index * 9;
 
@@ -527,20 +527,20 @@ impl Solver {
 
                             // The first 9 bits are flags for whether the missing number
                             // can be placed in that i-th square.
-                            let mut can_place = u16::MAX;
+                            let mut can_place = [true; 9];
 
                             let block = state.board.get_block(x, y);
 
                             for (block_idx, square) in block.enumerate() {
                                 if state.valid_moves[square.0] & 1 << i == 0 {
-                                    can_place &= !(1 << block_idx);
+                                    can_place[block_idx] = false;
                                 }
                             }
 
                             // We want one bit set, but the last 7 bits will always be one.
                             // So there will always be 7 ones.
-                            if can_place.count_ones() == 1 + 7 {
-                                let index = can_place.trailing_zeros();
+                            if can_place.iter().filter(|f| **f).count() == 1 {
+                                let index = can_place.iter().position(|f| *f).unwrap();
                                 let square =
                                     state.board.get_block(x, y).nth(index as usize).unwrap();
 
