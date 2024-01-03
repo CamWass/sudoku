@@ -211,16 +211,68 @@ struct SpeculationState {
     // TODO: might be able to simplify this to one board per solver, and store
     // only a stack of moves that we can later undo.
     pub board: Board,
-    // For each empty square in the board, stores the moves that we have already
-    // tried in this speculation path.
-    tried_moves: [u16; 81],
     // TODO: u8
     empty_squares: usize,
+    // Stores the valid moves for each square on the board.
+    valid_moves: [u16; 81],
 }
 
 impl SpeculationState {
     fn is_solved(&self) -> bool {
         self.empty_squares == 0
+    }
+
+    // Updates the state to reflect a move.
+    fn make_move(&mut self, square: usize, value: u8) {
+        self.board.inner[square] = value;
+        self.empty_squares -= 1;
+
+        // Update valid moves for affected squares.
+
+        // Not more moves are valid for this square.
+        self.valid_moves[square] = 0;
+
+        // Row
+        {
+            let idx = square;
+            let start = idx / 9 * 9;
+
+            for square in start..start + 9 {
+                self.valid_moves[square] &= !(1 << value);
+            }
+        }
+
+        // Col
+        {
+            let idx = square;
+            let row_start = idx / 9 * 9;
+            let col = idx - row_start;
+
+            for row in 0..9 {
+                let row_start = row * 9;
+
+                let square = row_start + col;
+
+                self.valid_moves[square] &= !(1 << value);
+            }
+        }
+
+        // Block
+        {
+            let idx = square;
+            let row_start = idx / 9 * 9;
+            let col = idx - row_start;
+
+            let x = col / 3;
+
+            let row = idx / 9;
+
+            let y = row / 3;
+
+            for square in self.board.get_block(x, y) {
+                self.valid_moves[square.0] &= !(1 << value);
+            }
+        }
     }
 }
 
@@ -228,8 +280,15 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
     let mut initial = SpeculationState {
         empty_squares: input.empty_squares(),
         board: input,
-        tried_moves: [0; 81],
+        valid_moves: [0; 81],
     };
+
+    // Initialize the valid moves for each square.
+    for square in 0..input.inner.len() {
+        if input.inner[square] == 0 {
+            initial.valid_moves[square] = input.get_moves_for_square(Square(square));
+        }
+    }
 
     Solver::place_obvious(&mut initial);
 
@@ -239,17 +298,12 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
 
     let mut initial_moves = Vec::new();
 
-    for square in 0..initial.board.inner.len() {
-        if initial.board.inner[square] != 0 {
-            continue;
-        }
-
-        let square = Square(square);
-
-        let moves = initial.board.get_moves_for_square(square);
-        for i in 1_u8..10 {
-            if moves & 1 << i != 0 {
-                initial_moves.push((square.0, i));
+    for (square, moves) in initial.valid_moves.iter().enumerate() {
+        if *moves != 0 {
+            for i in 1_u8..10 {
+                if moves & 1 << i != 0 {
+                    initial_moves.push((square, i));
+                }
             }
         }
     }
@@ -267,13 +321,12 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
         if solved.load(Ordering::SeqCst) {
             return None;
         }
-        let mut board = initial.board;
-        board.inner[initial_move.0] = initial_move.1;
-        let initial_state = SpeculationState {
-            board,
-            tried_moves: initial.tried_moves,
-            empty_squares: initial.empty_squares - 1,
+        let mut initial_state = SpeculationState {
+            board: initial.board,
+            empty_squares: initial.empty_squares,
+            valid_moves: initial.valid_moves,
         };
+        initial_state.make_move(initial_move.0, initial_move.1);
         let result = Solver::default().solve(initial_state, &solved);
         if result.is_some() {
             if print_dbg {
@@ -336,24 +389,22 @@ impl Solver {
     fn get_speculation(&mut self) -> Option<SpeculationState> {
         let prev = self.speculation_stack.last_mut().unwrap();
 
-        for square in 0..prev.board.inner.len() {
-            if prev.board.inner[square] != 0 {
-                continue;
-            }
-
-            let square = Square(square);
-
-            let moves = prev.board.get_moves_for_square(square) & !prev.tried_moves[square.0];
-            for i in 1_u8..10 {
-                if moves & 1 << i != 0 {
-                    let mut board = prev.board;
-                    board.inner[square.0] = i;
-                    prev.tried_moves[square.0] |= 1 << i;
-                    return Some(SpeculationState {
-                        empty_squares: prev.empty_squares - 1,
-                        board,
-                        tried_moves: prev.tried_moves,
-                    });
+        for (square, moves) in prev.valid_moves.iter().enumerate() {
+            if *moves != 0 {
+                for i in 1_u8..10 {
+                    if moves & 1 << i != 0 {
+                        let mut state = SpeculationState {
+                            empty_squares: prev.empty_squares,
+                            board: prev.board,
+                            valid_moves: prev.valid_moves,
+                        };
+                        state.make_move(square, i);
+                        // Either we solve the puzzle on this speculation path,
+                        // or this guess is wrong and is there for not a valid
+                        // move to try again.
+                        prev.valid_moves[square] &= !(1 << i);
+                        return Some(state);
+                    }
                 }
             }
         }
@@ -361,36 +412,29 @@ impl Solver {
         None
     }
 
-    fn place_obvious(speculation_state: &mut SpeculationState) {
-        let board = &mut speculation_state.board;
-
+    fn place_obvious(state: &mut SpeculationState) {
         let mut made_move = true;
 
         while made_move {
             made_move = false;
-            for square in 0..board.inner.len() {
-                if board.inner[square] != 0 {
-                    continue;
-                }
+            for square in 0..state.valid_moves.len() {
+                let moves = state.valid_moves[square];
+                if moves != 0 {
+                    let mut possible_moves = 0_u8;
+                    let mut possible_move = None;
 
-                let square = Square(square);
+                    for i in 1_u8..10 {
+                        if moves & 1 << i != 0 {
+                            possible_moves += 1;
 
-                let mut possible_moves = 0_u8;
-                let mut possible_move = None;
-
-                let moves = board.get_moves_for_square(square);
-                for i in 1_u8..10 {
-                    if moves & 1 << i != 0 {
-                        possible_moves += 1;
-
-                        possible_move = Some(i);
+                            possible_move = Some(i);
+                        }
                     }
-                }
 
-                if possible_moves == 1 {
-                    board.inner[square.0] = possible_move.unwrap();
-                    made_move = true;
-                    speculation_state.empty_squares -= 1;
+                    if possible_moves == 1 {
+                        state.make_move(square, possible_move.unwrap());
+                        made_move = true;
+                    }
                 }
             }
 
@@ -403,7 +447,7 @@ impl Solver {
                 for col in 0..9_u8 {
                     let square = row_start + col;
 
-                    present |= 1 << board.inner[square as usize];
+                    present |= 1 << state.board.inner[square as usize];
                 }
 
                 for i in 1..10_u8 {
@@ -417,23 +461,8 @@ impl Solver {
                         for col in 0..9_u8 {
                             let square = (row_start + col) as usize;
 
-                            if board.inner[square] != 0 {
+                            if state.valid_moves[square] & 1 << i == 0 {
                                 can_place &= !(1 << col);
-                                continue;
-                            }
-
-                            let square = Square(square);
-
-                            for v in board.get_col_for_square(square) {
-                                if v == i {
-                                    can_place &= !(1 << col);
-                                }
-                            }
-
-                            for v in board.get_block_for_square(square) {
-                                if v == i {
-                                    can_place &= !(1 << col);
-                                }
                             }
                         }
 
@@ -442,9 +471,8 @@ impl Solver {
                         if can_place.count_ones() == 1 + 7 {
                             let index = can_place.trailing_zeros();
 
-                            board.inner[row_start as usize + index as usize] = i;
+                            state.make_move(row_start as usize + index as usize, i);
                             made_move = true;
-                            speculation_state.empty_squares -= 1;
                         }
                     }
                 }
@@ -453,7 +481,7 @@ impl Solver {
             // Try fill columns
             for col_start in 0..9_u8 {
                 let start_square = Square(col_start as usize);
-                let col = board.get_col_for_square(start_square);
+                let col = state.board.get_col_for_square(start_square);
 
                 let mut present = 0_u16;
 
@@ -473,23 +501,8 @@ impl Solver {
                             let row_start = row * 9;
                             let square = (row_start + col_start) as usize;
 
-                            if board.inner[square] != 0 {
+                            if state.valid_moves[square] & 1 << i == 0 {
                                 can_place &= !(1 << row);
-                                continue;
-                            }
-
-                            let square = Square(square);
-
-                            for &v in board.get_row_for_square(square) {
-                                if v == i {
-                                    can_place &= !(1 << row);
-                                }
-                            }
-
-                            for v in board.get_block_for_square(square) {
-                                if v == i {
-                                    can_place &= !(1 << row);
-                                }
                             }
                         }
 
@@ -500,9 +513,8 @@ impl Solver {
 
                             let row_start = index * 9;
 
-                            board.inner[row_start as usize + col_start as usize] = i;
+                            state.make_move(row_start as usize + col_start as usize, i);
                             made_move = true;
-                            speculation_state.empty_squares -= 1;
                         }
                     }
                 }
@@ -511,12 +523,12 @@ impl Solver {
             // Try fill blocks
             for x in 0..3 {
                 for y in 0..3 {
-                    let block = board.get_block(x, y);
+                    let block = state.board.get_block(x, y);
 
                     let mut present = 0_u16;
 
                     for square in block {
-                        present |= 1 << board.inner[square.0];
+                        present |= 1 << state.board.inner[square.0];
                     }
 
                     for i in 1..10_u8 {
@@ -527,24 +539,11 @@ impl Solver {
                             // can be placed in that i-th square.
                             let mut can_place = u16::MAX;
 
-                            let block = board.get_block(x, y);
+                            let block = state.board.get_block(x, y);
 
                             for (block_idx, square) in block.enumerate() {
-                                if board.inner[square.0] != 0 {
+                                if state.valid_moves[square.0] & 1 << i == 0 {
                                     can_place &= !(1 << block_idx);
-                                    continue;
-                                }
-
-                                for &v in board.get_row_for_square(square) {
-                                    if v == i {
-                                        can_place &= !(1 << block_idx);
-                                    }
-                                }
-
-                                for v in board.get_col_for_square(square) {
-                                    if v == i {
-                                        can_place &= !(1 << block_idx);
-                                    }
                                 }
                             }
 
@@ -552,11 +551,11 @@ impl Solver {
                             // So there will always be 7 ones.
                             if can_place.count_ones() == 1 + 7 {
                                 let index = can_place.trailing_zeros();
-                                let square = board.get_block(x, y).nth(index as usize).unwrap();
+                                let square =
+                                    state.board.get_block(x, y).nth(index as usize).unwrap();
 
-                                board.inner[square.0] = i;
+                                state.make_move(square.0, i);
                                 made_move = true;
-                                speculation_state.empty_squares -= 1;
                             }
                         }
                     }
