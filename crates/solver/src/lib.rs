@@ -249,8 +249,6 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
         let moves = initial.board.get_moves_for_square(square);
         for i in 1_u8..10 {
             if moves & 1 << i != 0 {
-                let mut board = initial.board;
-                board.inner[square.0] = i;
                 initial_moves.push((square.0, i));
             }
         }
