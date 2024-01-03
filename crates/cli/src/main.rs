@@ -43,3 +43,27 @@ fn main() {
 
     // debug_assert!(board.inner == OUTPUT3);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test(input: [u8; 81], output: [u8; 81]) {
+        let input = Board { inner: input };
+        let board = solve(input, false);
+        assert!(board.inner == output);
+    }
+
+    #[test]
+    fn test_puzzle1() {
+        test(INPUT1, OUTPUT1);
+    }
+    #[test]
+    fn test_puzzle2() {
+        test(INPUT2, OUTPUT2);
+    }
+    #[test]
+    fn test_puzzle3() {
+        test(INPUT3, OUTPUT3);
+    }
+}
