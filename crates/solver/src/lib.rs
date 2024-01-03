@@ -222,22 +222,19 @@ impl SpeculationState {
         // Not more moves are valid for this square.
         self.valid_moves[square] = 0;
 
+        let row_start = square / 9 * 9;
+
         // Row
         {
-            let idx = square;
-            let start = idx / 9 * 9;
-
-            for square in start..start + 9 {
+            for square in row_start..row_start + 9 {
                 self.valid_moves[square] &= !(1 << value);
             }
         }
 
+        let col = square - row_start;
+
         // Col
         {
-            let idx = square;
-            let row_start = idx / 9 * 9;
-            let col = idx - row_start;
-
             for row in 0..9 {
                 let row_start = row * 9;
 
@@ -249,13 +246,9 @@ impl SpeculationState {
 
         // Block
         {
-            let idx = square;
-            let row_start = idx / 9 * 9;
-            let col = idx - row_start;
-
             let x = col / 3;
 
-            let row = idx / 9;
+            let row = square / 9;
 
             let y = row / 3;
 
