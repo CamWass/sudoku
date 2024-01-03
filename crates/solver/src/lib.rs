@@ -27,13 +27,6 @@ If faced with many possible moves, pick them in most likely order.
 e.g. if there's a 50% chance a square is a 3, and a 33% chance it's
 a 9, choose 3 since it's more likely.
 
-TODO: do we even need to allocate initial states? Could we just calculate their number,
-then iterate over them and distribute them to worker threads?
-
-TODO: Could we maintain explicit allowed (or disallowed) moves for each empty square?
-Currently we calculate/check them a LOT compared to how often they are changed.
-Making a move can only affect empty squares in the current row/column,block
-
 */
 
 #[derive(Clone, Copy)]
@@ -208,10 +201,7 @@ impl Iterator for BlockIter {
 }
 
 struct SpeculationState {
-    // TODO: might be able to simplify this to one board per solver, and store
-    // only a stack of moves that we can later undo.
     pub board: Board,
-    // TODO: u8
     empty_squares: usize,
     // Stores the valid moves for each square on the board.
     valid_moves: [u16; 81],
