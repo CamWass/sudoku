@@ -297,7 +297,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
     let solved = AtomicBool::new(false);
 
     let result = initial_moves.into_par_iter().find_map_any(|initial_move| {
-        if solved.load(Ordering::SeqCst) {
+        if solved.load(Ordering::Relaxed) {
             return None;
         }
         let mut initial_state = SpeculationState {
@@ -311,7 +311,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
             if print_dbg {
                 println!("Found solution");
             }
-            solved.store(true, Ordering::SeqCst);
+            solved.store(true, Ordering::Relaxed);
         }
         result
     });
@@ -338,7 +338,7 @@ impl Solver {
         self.speculation_stack.push(initial);
 
         loop {
-            if solved.load(Ordering::SeqCst) {
+            if solved.load(Ordering::Relaxed) {
                 return None;
             }
 
