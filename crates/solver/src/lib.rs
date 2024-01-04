@@ -225,23 +225,19 @@ impl SpeculationState {
         let row_start = square / 9 * 9;
 
         // Row
-        {
-            for square in row_start..row_start + 9 {
-                self.valid_moves[square] &= !(1 << value);
-            }
+        for square in row_start..row_start + 9 {
+            self.valid_moves[square] &= !(1 << value);
         }
 
         let col = square - row_start;
 
         // Col
-        {
-            for row in 0..9 {
-                let row_start = row * 9;
+        for row in 0..9 {
+            let row_start = row * 9;
 
-                let square = row_start + col;
+            let square = row_start + col;
 
-                self.valid_moves[square] &= !(1 << value);
-            }
+            self.valid_moves[square] &= !(1 << value);
         }
 
         // Block
