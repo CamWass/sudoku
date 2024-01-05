@@ -27,6 +27,8 @@ If faced with many possible moves, pick them in most likely order.
 e.g. if there's a 50% chance a square is a 3, and a 33% chance it's
 a 9, choose 3 since it's more likely.
 
+TODO: can we use the GPU to parallelise the search?
+
 */
 
 #[derive(Clone, Copy)]
