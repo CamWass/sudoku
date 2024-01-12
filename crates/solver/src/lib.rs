@@ -420,15 +420,14 @@ impl Solver {
             }
 
             // Try fill rows
-            for row in 0..9_u8 {
+            for row in 0..9 {
                 let row_start = row * 9;
 
                 let mut present = 0_u16;
 
-                for col in 0..9_u8 {
+                for col in 0..9 {
                     let square = row_start + col;
-
-                    present |= 1 << state.board.inner[square as usize];
+                    present |= 1 << state.board.inner[square];
                 }
 
                 for i in 1..10_u8 {
@@ -439,11 +438,11 @@ impl Solver {
                         // can be placed in that i-th square.
                         let mut can_place = [true; 9];
 
-                        for col in 0..9_u8 {
-                            let square = (row_start + col) as usize;
+                        for col in 0..9 {
+                            let square = row_start + col;
 
                             if state.valid_moves[square] & 1 << i == 0 {
-                                can_place[col as usize] = false;
+                                can_place[col] = false;
                             }
                         }
 
@@ -452,7 +451,7 @@ impl Solver {
                         if can_place.iter().filter(|f| **f).count() == 1 {
                             let index = can_place.iter().position(|f| *f).unwrap();
 
-                            state.make_move(row_start as usize + index as usize, i);
+                            state.make_move(row_start + index, i);
                             made_move = true;
                         }
                     }
@@ -460,13 +459,12 @@ impl Solver {
             }
 
             // Try fill columns
-            for col_start in 0..9_u8 {
-                let start_square = Square(col_start as usize);
-                let col = state.board.get_col_for_square(start_square);
+            for col_start in 0..9 {
+                let start_square = Square(col_start);
 
                 let mut present = 0_u16;
 
-                for v in col {
+                for v in state.board.get_col_for_square(start_square) {
                     present |= 1 << v;
                 }
 
@@ -478,12 +476,12 @@ impl Solver {
                         // can be placed in that i-th square.
                         let mut can_place = [true; 9];
 
-                        for row in 0..9_u8 {
+                        for row in 0..9 {
                             let row_start = row * 9;
-                            let square = (row_start + col_start) as usize;
+                            let square = row_start + col_start;
 
                             if state.valid_moves[square] & 1 << i == 0 {
-                                can_place[row as usize] = false;
+                                can_place[row] = false;
                             }
                         }
 
@@ -494,7 +492,7 @@ impl Solver {
 
                             let row_start = index * 9;
 
-                            state.make_move(row_start as usize + col_start as usize, i);
+                            state.make_move(row_start + col_start, i);
                             made_move = true;
                         }
                     }
@@ -532,8 +530,7 @@ impl Solver {
                             // So there will always be 7 ones.
                             if can_place.iter().filter(|f| **f).count() == 1 {
                                 let index = can_place.iter().position(|f| *f).unwrap();
-                                let square =
-                                    state.board.get_block(x, y).nth(index as usize).unwrap();
+                                let square = state.board.get_block(x, y).nth(index).unwrap();
 
                                 state.make_move(square.0, i);
                                 made_move = true;
