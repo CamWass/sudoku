@@ -113,13 +113,17 @@ impl Board {
         let row = y * 3;
         let row_start = row * 9;
         let col = x * 3;
-        let cur = row_start + col;
-        let end = cur + 9 + 9 + 2;
-        BlockIter {
-            cur,
-            end,
-            col_in_block: 0,
+
+        let mut result = [Square(0); 9];
+
+        for i in 0..3 {
+            let row_start = row_start + i * 9 + col;
+            for col in 0..3 {
+                result[i * 3 + col] = Square(row_start + col);
+            }
         }
+
+        result.into_iter()
     }
 
     pub fn print(&self) {
@@ -167,36 +171,6 @@ impl Iterator for ColIter<'_> {
         let square = self.board.inner[row_start + self.col];
 
         self.row += 1;
-
-        Some(square)
-    }
-}
-
-struct BlockIter {
-    cur: usize,
-    end: usize,
-
-    col_in_block: usize,
-}
-
-impl Iterator for BlockIter {
-    type Item = Square;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.cur > self.end {
-            return None;
-        }
-
-        let square = Square(self.cur);
-
-        if self.col_in_block == 2 {
-            self.cur += 9; // next row
-            self.cur -= 2; // back to first col in block
-            self.col_in_block = 0;
-        } else {
-            self.cur += 1;
-            self.col_in_block += 1;
-        }
 
         Some(square)
     }
