@@ -157,14 +157,78 @@ impl Board {
 #[derive(Debug, Copy, Clone)]
 struct Square(usize);
 
+#[derive(Clone)]
 struct SpeculationState {
     pub board: Board,
     empty_squares: usize,
     // Stores the valid moves for each square on the board.
     valid_moves: [u16; 81],
+    row_values: [u16; 9],
+    col_values: [u16; 9],
+    block_values: [u16; 9],
 }
 
 impl SpeculationState {
+    fn new_initial(input: Board) -> Self {
+        let mut initial = SpeculationState {
+            empty_squares: input.empty_squares(),
+            board: input,
+            valid_moves: [0; 81],
+            row_values: [0; 9],
+            col_values: [0; 9],
+            block_values: [0; 9],
+        };
+
+        // Initialize the valid moves for each square.
+        for square in 0..input.inner.len() {
+            if input.inner[square] == 0 {
+                initial.valid_moves[square] = input.get_moves_for_square(Square(square));
+            }
+        }
+
+        // Initialize the bookkeeping of values present in each row/column/block.
+
+        for row in 0..9 {
+            let row_start = row * 9;
+
+            let mut present = 0_u16;
+
+            for col in 0..9 {
+                let square = row_start + col;
+                present |= 1 << initial.board.inner[square];
+            }
+            initial.row_values[row] = present;
+        }
+
+        for col_start in 0..9 {
+            let start_square = Square(col_start);
+
+            let mut present = 0_u16;
+
+            for v in initial.board.get_col_for_square(start_square) {
+                present |= 1 << v;
+            }
+
+            initial.col_values[col_start] = present;
+        }
+
+        for x in 0..3 {
+            for y in 0..3 {
+                let block = initial.board.get_block(x, y);
+
+                let mut present = 0_u16;
+
+                for square in block {
+                    present |= 1 << initial.board.inner[square.0];
+                }
+
+                initial.block_values[y * 3 + x] = present
+            }
+        }
+
+        initial
+    }
+
     fn is_solved(&self) -> bool {
         self.empty_squares == 0
     }
@@ -179,7 +243,11 @@ impl SpeculationState {
         // Not more moves are valid for this square.
         self.valid_moves[square] = 0;
 
-        let row_start = square / 9 * 9;
+        let row = square / 9;
+
+        self.row_values[row] |= 1 << value;
+
+        let row_start = row * 9;
 
         // Row
         for square in row_start..row_start + 9 {
@@ -187,6 +255,8 @@ impl SpeculationState {
         }
 
         let col = square - row_start;
+
+        self.col_values[col] |= 1 << value;
 
         // Col
         for row in 0..9 {
@@ -201,9 +271,9 @@ impl SpeculationState {
         {
             let x = col / 3;
 
-            let row = square / 9;
-
             let y = row / 3;
+
+            self.block_values[y * 3 + x] |= 1 << value;
 
             for square in self.board.get_block(x, y) {
                 self.valid_moves[square.0] &= !(1 << value);
@@ -213,18 +283,7 @@ impl SpeculationState {
 }
 
 pub fn solve(input: Board, print_dbg: bool) -> Board {
-    let mut initial = SpeculationState {
-        empty_squares: input.empty_squares(),
-        board: input,
-        valid_moves: [0; 81],
-    };
-
-    // Initialize the valid moves for each square.
-    for square in 0..input.inner.len() {
-        if input.inner[square] == 0 {
-            initial.valid_moves[square] = input.get_moves_for_square(Square(square));
-        }
-    }
+    let mut initial = SpeculationState::new_initial(input);
 
     Solver::place_obvious(&mut initial);
 
@@ -257,11 +316,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
         if solved.load(Ordering::Relaxed) {
             return None;
         }
-        let mut initial_state = SpeculationState {
-            board: initial.board,
-            empty_squares: initial.empty_squares,
-            valid_moves: initial.valid_moves,
-        };
+        let mut initial_state = initial.clone();
         initial_state.make_move(initial_move.0, initial_move.1);
         let result = Solver::default().solve(initial_state, &solved);
         if result.is_some() {
@@ -329,11 +384,7 @@ impl Solver {
             if *moves != 0 {
                 for i in 1_u8..10 {
                     if moves & 1 << i != 0 {
-                        let mut state = SpeculationState {
-                            empty_squares: prev.empty_squares,
-                            board: prev.board,
-                            valid_moves: prev.valid_moves,
-                        };
+                        let mut state = prev.clone();
                         state.make_move(square, i);
                         // Either we solve the puzzle on this speculation path,
                         // or this guess is wrong and is there for not a valid
@@ -378,12 +429,7 @@ impl Solver {
             for row in 0..9 {
                 let row_start = row * 9;
 
-                let mut present = 0_u16;
-
-                for col in 0..9 {
-                    let square = row_start + col;
-                    present |= 1 << state.board.inner[square];
-                }
+                let present = state.row_values[row];
 
                 for i in 1..10_u8 {
                     if present & 1 << i == 0 {
@@ -415,13 +461,7 @@ impl Solver {
 
             // Try fill columns
             for col_start in 0..9 {
-                let start_square = Square(col_start);
-
-                let mut present = 0_u16;
-
-                for v in state.board.get_col_for_square(start_square) {
-                    present |= 1 << v;
-                }
+                let present = state.col_values[col_start];
 
                 for i in 1..10_u8 {
                     if present & 1 << i == 0 {
@@ -457,13 +497,7 @@ impl Solver {
             // Try fill blocks
             for x in 0..3 {
                 for y in 0..3 {
-                    let block = state.board.get_block(x, y);
-
-                    let mut present = 0_u16;
-
-                    for square in block {
-                        present |= 1 << state.board.inner[square.0];
-                    }
+                    let present = state.block_values[y * 3 + x];
 
                     for i in 1..10_u8 {
                         if present & 1 << i == 0 {
