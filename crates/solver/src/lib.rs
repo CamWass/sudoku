@@ -87,11 +87,14 @@ impl Board {
         let idx = square.0;
         let row_start = idx / 9 * 9;
         let col = idx - row_start;
-        ColIter {
-            board: self,
-            col,
-            row: 0,
+
+        let mut result = [0; 9];
+
+        for row in 0..9 {
+            result[row] = self.inner[row * 9 + col];
         }
+
+        result.into_iter()
     }
 
     // Returns an iterator that yields the squares in the 3x3 block that contains the square.
@@ -153,30 +156,6 @@ impl Board {
 
 #[derive(Debug, Copy, Clone)]
 struct Square(usize);
-
-struct ColIter<'b> {
-    board: &'b Board,
-    col: usize,
-    row: usize,
-}
-
-impl Iterator for ColIter<'_> {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.row == 9 {
-            return None;
-        }
-
-        let row_start = self.row * 9;
-
-        let square = self.board.inner[row_start + self.col];
-
-        self.row += 1;
-
-        Some(square)
-    }
-}
 
 struct SpeculationState {
     pub board: Board,
