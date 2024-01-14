@@ -110,6 +110,8 @@ impl Board {
     }
 
     fn get_block(&self, x: usize, y: usize) -> impl Iterator<Item = Square> {
+        assert!(x < 3);
+        assert!(y < 3);
         let row = y * 3;
         let row_start = row * 9;
         let col = x * 3;
