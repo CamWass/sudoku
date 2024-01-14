@@ -443,10 +443,9 @@ impl Solver {
                         for col in 0..9 {
                             let square = row_start + col;
 
-                            if state.valid_moves[square] & 1 << i == 0 {
-                                can_place[col] = false;
-                                count -= 1;
-                            }
+                            let present = state.valid_moves[square] & 1 << i == 0;
+                            can_place[col] = !present;
+                            count -= present as u8;
                         }
 
                         if count == 1 {
@@ -476,10 +475,9 @@ impl Solver {
                             let row_start = row * 9;
                             let square = row_start + col_start;
 
-                            if state.valid_moves[square] & 1 << i == 0 {
-                                can_place[row] = false;
-                                count -= 1;
-                            }
+                            let present = state.valid_moves[square] & 1 << i == 0;
+                            can_place[row] = !present;
+                            count -= present as u8;
                         }
 
                         if count == 1 {
@@ -511,10 +509,9 @@ impl Solver {
                             let block = state.board.get_block(x, y);
 
                             for (block_idx, square) in block.enumerate() {
-                                if state.valid_moves[square.0] & 1 << i == 0 {
-                                    can_place[block_idx] = false;
-                                    count -= 1;
-                                }
+                                let present = state.valid_moves[square.0] & 1 << i == 0;
+                                can_place[block_idx] = !present;
+                                count -= present as u8;
                             }
 
                             if count == 1 {
