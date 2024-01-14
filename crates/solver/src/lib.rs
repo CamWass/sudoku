@@ -357,18 +357,18 @@ impl Solver {
                 let moves = state.valid_moves[square];
                 if moves != 0 {
                     let mut possible_moves = 0_u8;
-                    let mut possible_move = None;
+                    let mut possible_move = 0;
 
                     for i in 1_u8..10 {
                         if moves & 1 << i != 0 {
                             possible_moves += 1;
 
-                            possible_move = Some(i);
+                            possible_move = i;
                         }
                     }
 
                     if possible_moves == 1 {
-                        state.make_move(square, possible_move.unwrap());
+                        state.make_move(square, possible_move);
                         made_move = true;
                     }
                 }
@@ -389,8 +389,8 @@ impl Solver {
                     if present & 1 << i == 0 {
                         // Missing
 
-                        // The first 9 bits are flags for whether the missing number
-                        // can be placed in that i-th square.
+                        // The i-th bool represents if the missing number can be placed in
+                        // the i-th square.
                         let mut can_place = [true; 9];
                         let mut count = 9;
 
@@ -403,8 +403,6 @@ impl Solver {
                             }
                         }
 
-                        // We want one bit set, but the last 7 bits will always be one.
-                        // So there will always be 7 ones.
                         if count == 1 {
                             let index = can_place.iter().position(|f| *f).unwrap();
 
@@ -429,8 +427,8 @@ impl Solver {
                     if present & 1 << i == 0 {
                         // Missing
 
-                        // The first 9 bits are flags for whether the missing number
-                        // can be placed in that i-th square.
+                        // The i-th bool represents if the missing number can be placed in
+                        // the i-th square.
                         let mut can_place = [true; 9];
                         let mut count = 9;
 
@@ -444,8 +442,6 @@ impl Solver {
                             }
                         }
 
-                        // We want one bit set, but the last 7 bits will always be one.
-                        // So there will always be 7 ones.
                         if count == 1 {
                             let index = can_place.iter().position(|f| *f).unwrap();
 
@@ -473,8 +469,8 @@ impl Solver {
                         if present & 1 << i == 0 {
                             // Missing
 
-                            // The first 9 bits are flags for whether the missing number
-                            // can be placed in that i-th square.
+                            // The i-th bool represents if the missing number can be placed in
+                            // the i-th square.
                             let mut can_place = [true; 9];
                             let mut count = 9;
 
@@ -487,8 +483,6 @@ impl Solver {
                                 }
                             }
 
-                            // We want one bit set, but the last 7 bits will always be one.
-                            // So there will always be 7 ones.
                             if count == 1 {
                                 let index = can_place.iter().position(|f| *f).unwrap();
                                 let square = state.board.get_block(x, y).nth(index).unwrap();
