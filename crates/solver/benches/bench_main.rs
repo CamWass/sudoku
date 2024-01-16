@@ -3,7 +3,9 @@ use data::*;
 use solver::*;
 
 fn test_solve(puzzle: [u8; 81]) {
-    let input = Board { inner: puzzle };
+    let input = Board {
+        inner: black_box(puzzle),
+    };
 
     let board = solve(input, false);
 
