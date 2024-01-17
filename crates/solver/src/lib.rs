@@ -102,7 +102,9 @@ impl Board {
         let x = square.col() / 3;
         let y = square.row() / 3;
 
-        self.get_block(x, y).map(|s| self.inner[s.0])
+        // SAFETY: Squares are always in-bounds by construction.
+        self.get_block(x, y)
+            .map(|s| unsafe { *self.inner.get_unchecked(s.0) })
     }
 
     fn get_block(&self, x: usize, y: usize) -> impl Iterator<Item = Square> {
