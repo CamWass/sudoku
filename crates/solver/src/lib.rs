@@ -1,5 +1,8 @@
 use rayon::prelude::*;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    hint::unreachable_unchecked,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 /*
 Pick square
@@ -78,15 +81,12 @@ impl Board {
     }
 
     fn get_row_for_square(&self, square: Square) -> &[u8] {
-        let idx = square.0;
-        let start = idx / 9 * 9;
+        let start = square.row_start();
         &self.inner[start..start + 9]
     }
 
     fn get_col_for_square(&self, square: Square) -> impl Iterator<Item = u8> + '_ {
-        let idx = square.0;
-        let row_start = idx / 9 * 9;
-        let col = idx - row_start;
+        let col = square.col();
 
         let mut result = [0; 9];
 
@@ -99,15 +99,8 @@ impl Board {
 
     // Returns an iterator that yields the squares in the 3x3 block that contains the square.
     fn get_block_for_square(&self, square: Square) -> impl Iterator<Item = u8> + '_ {
-        let idx = square.0;
-        let row_start = idx / 9 * 9;
-        let col = idx - row_start;
-
-        let x = col / 3;
-
-        let row = idx / 9;
-
-        let y = row / 3;
+        let x = square.col() / 3;
+        let y = square.row() / 3;
 
         self.get_block(x, y).map(|s| self.inner[s.0])
     }
@@ -155,7 +148,40 @@ impl Board {
 }
 
 #[derive(Debug, Copy, Clone)]
+/// IMPORTANT: value must be < 81.
 struct Square(usize);
+
+impl Square {
+    fn row(&self) -> usize {
+        let row = self.0 / 9;
+        if row < 9 {
+            row
+        } else {
+            // SAFETY: Square is always < 81, so this is unreachable.
+            unsafe { unreachable_unchecked() }
+        }
+    }
+
+    fn row_start(&self) -> usize {
+        let row_start = self.row() * 9;
+        if row_start <= 72 {
+            row_start
+        } else {
+            // SAFETY: Square is always < 81, so this is unreachable.
+            unsafe { unreachable_unchecked() }
+        }
+    }
+
+    fn col(&self) -> usize {
+        let col = self.0 - self.row_start();
+        if col < 9 {
+            col
+        } else {
+            // SAFETY: Square is always < 81, so this is unreachable.
+            unsafe { unreachable_unchecked() }
+        }
+    }
+}
 
 #[derive(Clone)]
 struct SpeculationState {
@@ -234,27 +260,28 @@ impl SpeculationState {
     }
 
     // Updates the state to reflect a move.
-    fn make_move(&mut self, square: usize, value: u8) {
-        self.board.inner[square] = value;
+    fn make_move(&mut self, square: Square, value: u8) {
+        let idx = square.0;
+        self.board.inner[idx] = value;
         self.empty_squares -= 1;
 
         // Update valid moves for affected squares.
 
         // Not more moves are valid for this square.
-        self.valid_moves[square] = 0;
+        self.valid_moves[idx] = 0;
 
-        let row = square / 9;
+        let row = square.row();
 
         self.row_values[row] |= 1 << value;
 
-        let row_start = row * 9;
+        let row_start = square.row_start();
 
         // Row
         for square in row_start..row_start + 9 {
             self.valid_moves[square] &= !(1 << value);
         }
 
-        let col = square - row_start;
+        let col = square.col();
 
         self.col_values[col] |= 1 << value;
 
@@ -270,7 +297,6 @@ impl SpeculationState {
         // Block
         {
             let x = col / 3;
-
             let y = row / 3;
 
             self.block_values[y * 3 + x] |= 1 << value;
@@ -297,7 +323,7 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
         if *moves != 0 {
             for i in 1_u8..10 {
                 if moves & 1 << i != 0 {
-                    initial_moves.push((square, i));
+                    initial_moves.push((Square(square), i));
                 }
             }
         }
@@ -385,7 +411,7 @@ impl Solver {
                 for i in 1_u8..10 {
                     if moves & 1 << i != 0 {
                         let mut state = prev.clone();
-                        state.make_move(square, i);
+                        state.make_move(Square(square), i);
                         // Either we solve the puzzle on this speculation path,
                         // or this guess is wrong and is there for not a valid
                         // move to try again.
@@ -419,7 +445,7 @@ impl Solver {
                     }
 
                     if possible_moves == 1 {
-                        state.make_move(square, possible_move);
+                        state.make_move(Square(square), possible_move);
                         made_move = true;
                     }
                 }
@@ -451,7 +477,7 @@ impl Solver {
                         if count == 1 {
                             let index = can_place.iter().position(|f| *f).unwrap();
 
-                            state.make_move(row_start + index, i);
+                            state.make_move(Square(row_start + index), i);
                             made_move = true;
                         }
                     }
@@ -485,7 +511,7 @@ impl Solver {
 
                             let row_start = index * 9;
 
-                            state.make_move(row_start + col_start, i);
+                            state.make_move(Square(row_start + col_start), i);
                             made_move = true;
                         }
                     }
@@ -518,7 +544,7 @@ impl Solver {
                                 let index = can_place.iter().position(|f| *f).unwrap();
                                 let square = state.board.get_block(x, y).nth(index).unwrap();
 
-                                state.make_move(square.0, i);
+                                state.make_move(Square(square.0), i);
                                 made_move = true;
                             }
                         }
