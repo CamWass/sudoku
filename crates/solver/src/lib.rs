@@ -463,22 +463,18 @@ impl Solver {
                     if present & 1 << i == 0 {
                         // Missing
 
-                        // The i-th bool represents if the missing number can be placed in
-                        // the i-th square.
-                        let mut can_place = [true; 9];
-                        let mut count = 9;
+                        let mut index = 0;
+                        let mut count = 0;
 
                         for col in 0..9 {
                             let square = row_start + col;
 
-                            let present = state.valid_moves[square] & 1 << i == 0;
-                            can_place[col] = !present;
-                            count -= present as u8;
+                            let can_place = state.valid_moves[square] & 1 << i != 0;
+                            index |= col * can_place as usize;
+                            count += can_place as usize;
                         }
 
                         if count == 1 {
-                            let index = can_place.iter().position(|f| *f).unwrap();
-
                             state.make_move(Square(row_start + index), i);
                             made_move = true;
                         }
@@ -494,23 +490,19 @@ impl Solver {
                     if present & 1 << i == 0 {
                         // Missing
 
-                        // The i-th bool represents if the missing number can be placed in
-                        // the i-th square.
-                        let mut can_place = [true; 9];
-                        let mut count = 9;
+                        let mut index = 0;
+                        let mut count = 0;
 
                         for row in 0..9 {
                             let row_start = row * 9;
                             let square = row_start + col_start;
 
-                            let present = state.valid_moves[square] & 1 << i == 0;
-                            can_place[row] = !present;
-                            count -= present as u8;
+                            let can_place = state.valid_moves[square] & 1 << i != 0;
+                            index |= row * can_place as usize;
+                            count += can_place as usize;
                         }
 
                         if count == 1 {
-                            let index = can_place.iter().position(|f| *f).unwrap();
-
                             let row_start = index * 9;
 
                             state.make_move(Square(row_start + col_start), i);
@@ -529,21 +521,18 @@ impl Solver {
                         if present & 1 << i == 0 {
                             // Missing
 
-                            // The i-th bool represents if the missing number can be placed in
-                            // the i-th square.
-                            let mut can_place = [true; 9];
-                            let mut count = 9;
+                            let mut index = 0;
+                            let mut count = 0;
 
                             let block = state.board.get_block(x, y);
 
                             for (block_idx, square) in block.enumerate() {
-                                let present = state.valid_moves[square.0] & 1 << i == 0;
-                                can_place[block_idx] = !present;
-                                count -= present as u8;
+                                let can_place = state.valid_moves[square.0] & 1 << i != 0;
+                                index |= block_idx * can_place as usize;
+                                count += can_place as usize;
                             }
 
                             if count == 1 {
-                                let index = can_place.iter().position(|f| *f).unwrap();
                                 let square = state.board.get_block(x, y).nth(index).unwrap();
 
                                 state.make_move(Square(square.0), i);
