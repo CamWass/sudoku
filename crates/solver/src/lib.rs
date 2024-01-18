@@ -439,11 +439,9 @@ impl Solver {
                     let mut possible_move = 0;
 
                     for i in 1_u8..10 {
-                        if moves & 1 << i != 0 {
-                            possible_moves += 1;
-
-                            possible_move = i;
-                        }
+                        let can_place = moves & 1 << i != 0;
+                        possible_move |= i * can_place as u8;
+                        possible_moves += can_place as u8;
                     }
 
                     if possible_moves == 1 {
