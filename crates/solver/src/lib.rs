@@ -432,30 +432,102 @@ impl Solver {
 
         while made_move {
             made_move = false;
-            for square in 0..state.valid_moves.len() {
-                let moves = state.valid_moves[square];
-                if moves != 0 {
-                    let mut possible_moves = 0_u8;
-                    let mut possible_move = 0;
 
-                    for i in 1_u8..10 {
-                        let can_place = moves & 1 << i != 0;
-                        possible_move |= i * can_place as u8;
-                        possible_moves += can_place as u8;
+            Self::fill_squares(state, &mut made_move);
+            Self::fill_rows(state, &mut made_move);
+            Self::fill_columns(state, &mut made_move);
+            Self::fill_blocks(state, &mut made_move);
+        }
+    }
+
+    fn fill_squares(state: &mut SpeculationState, made_move: &mut bool) {
+        // TODO: we can operate on batches of squares, potentially enabling vectorisation
+        // and elimination of some shared computation (updating valid moves etc)
+        for square in 0..state.valid_moves.len() {
+            let moves = state.valid_moves[square];
+            if moves != 0 {
+                let mut possible_moves = 0_u8;
+                let mut possible_move = 0;
+
+                for i in 1_u8..10 {
+                    let can_place = moves & 1 << i != 0;
+                    possible_move |= i * can_place as u8;
+                    possible_moves += can_place as u8;
+                }
+
+                if possible_moves == 1 {
+                    state.make_move(Square(square), possible_move);
+                    *made_move = true;
+                }
+            }
+        }
+    }
+
+    fn fill_rows(state: &mut SpeculationState, made_move: &mut bool) {
+        for row in 0..9 {
+            let row_start = row * 9;
+
+            let present = state.row_values[row];
+
+            for i in 1..10_u8 {
+                if present & 1 << i == 0 {
+                    // Missing
+
+                    let mut index = 0;
+                    let mut count = 0;
+
+                    for col in 0..9 {
+                        let square = row_start + col;
+
+                        let can_place = state.valid_moves[square] & 1 << i != 0;
+                        index |= col * can_place as usize;
+                        count += can_place as usize;
                     }
 
-                    if possible_moves == 1 {
-                        state.make_move(Square(square), possible_move);
-                        made_move = true;
+                    if count == 1 {
+                        state.make_move(Square(row_start + index), i);
+                        *made_move = true;
                     }
                 }
             }
+        }
+    }
 
-            // Try fill rows
-            for row in 0..9 {
-                let row_start = row * 9;
+    fn fill_columns(state: &mut SpeculationState, made_move: &mut bool) {
+        for col_start in 0..9 {
+            let present = state.col_values[col_start];
 
-                let present = state.row_values[row];
+            for i in 1..10_u8 {
+                if present & 1 << i == 0 {
+                    // Missing
+
+                    let mut index = 0;
+                    let mut count = 0;
+
+                    for row in 0..9 {
+                        let row_start = row * 9;
+                        let square = row_start + col_start;
+
+                        let can_place = state.valid_moves[square] & 1 << i != 0;
+                        index |= row * can_place as usize;
+                        count += can_place as usize;
+                    }
+
+                    if count == 1 {
+                        let row_start = index * 9;
+
+                        state.make_move(Square(row_start + col_start), i);
+                        *made_move = true;
+                    }
+                }
+            }
+        }
+    }
+
+    fn fill_blocks(state: &mut SpeculationState, made_move: &mut bool) {
+        for x in 0..3 {
+            for y in 0..3 {
+                let present = state.block_values[y * 3 + x];
 
                 for i in 1..10_u8 {
                     if present & 1 << i == 0 {
@@ -464,78 +536,19 @@ impl Solver {
                         let mut index = 0;
                         let mut count = 0;
 
-                        for col in 0..9 {
-                            let square = row_start + col;
+                        let block = state.board.get_block(x, y);
 
-                            let can_place = state.valid_moves[square] & 1 << i != 0;
-                            index |= col * can_place as usize;
+                        for (block_idx, square) in block.enumerate() {
+                            let can_place = state.valid_moves[square.0] & 1 << i != 0;
+                            index |= block_idx * can_place as usize;
                             count += can_place as usize;
                         }
 
                         if count == 1 {
-                            state.make_move(Square(row_start + index), i);
-                            made_move = true;
-                        }
-                    }
-                }
-            }
+                            let square = state.board.get_block(x, y).nth(index).unwrap();
 
-            // Try fill columns
-            for col_start in 0..9 {
-                let present = state.col_values[col_start];
-
-                for i in 1..10_u8 {
-                    if present & 1 << i == 0 {
-                        // Missing
-
-                        let mut index = 0;
-                        let mut count = 0;
-
-                        for row in 0..9 {
-                            let row_start = row * 9;
-                            let square = row_start + col_start;
-
-                            let can_place = state.valid_moves[square] & 1 << i != 0;
-                            index |= row * can_place as usize;
-                            count += can_place as usize;
-                        }
-
-                        if count == 1 {
-                            let row_start = index * 9;
-
-                            state.make_move(Square(row_start + col_start), i);
-                            made_move = true;
-                        }
-                    }
-                }
-            }
-
-            // Try fill blocks
-            for x in 0..3 {
-                for y in 0..3 {
-                    let present = state.block_values[y * 3 + x];
-
-                    for i in 1..10_u8 {
-                        if present & 1 << i == 0 {
-                            // Missing
-
-                            let mut index = 0;
-                            let mut count = 0;
-
-                            let block = state.board.get_block(x, y);
-
-                            for (block_idx, square) in block.enumerate() {
-                                let can_place = state.valid_moves[square.0] & 1 << i != 0;
-                                index |= block_idx * can_place as usize;
-                                count += can_place as usize;
-                            }
-
-                            if count == 1 {
-                                let square = state.board.get_block(x, y).nth(index).unwrap();
-
-                                state.make_move(Square(square.0), i);
-                                made_move = true;
-                            }
+                            state.make_move(Square(square.0), i);
+                            *made_move = true;
                         }
                     }
                 }
