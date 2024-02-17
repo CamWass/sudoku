@@ -1,7 +1,7 @@
 use data::*;
 use solver::{solve, Board};
 
-#[rustfmt::skip] 
+#[rustfmt::skip]
 pub static INPUT: [u8; 81] = [
     0,0,0, 0,0,0, 0,0,0,
     0,0,0, 0,0,0, 0,0,0,
