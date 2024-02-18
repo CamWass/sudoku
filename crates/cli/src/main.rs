@@ -1,5 +1,6 @@
 use data::*;
-use solver::{solve, Board};
+use solver::intuitive::solve;
+use solver::*;
 
 #[rustfmt::skip]
 pub static INPUT: [u8; 81] = [

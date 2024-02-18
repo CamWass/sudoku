@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use data::*;
+use solver::intuitive::solve;
 use solver::*;
 
 fn test_solve(puzzle: [u8; 81]) -> Board {
