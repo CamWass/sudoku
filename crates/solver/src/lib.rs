@@ -103,11 +103,10 @@ impl Board {
         let y = square.row() / 3;
 
         // SAFETY: Squares are always in-bounds by construction.
-        self.get_block(x, y)
-            .map(|s| unsafe { *self.inner.get_unchecked(s.0) })
+        Board::get_block(x, y).map(|s| unsafe { *self.inner.get_unchecked(s.0) })
     }
 
-    fn get_block(&self, x: usize, y: usize) -> impl Iterator<Item = Square> {
+    fn get_block(x: usize, y: usize) -> impl Iterator<Item = Square> {
         assert!(x < 3);
         assert!(y < 3);
         let row = y * 3;
@@ -242,7 +241,7 @@ impl SpeculationState {
 
         for x in 0..3 {
             for y in 0..3 {
-                let block = initial.board.get_block(x, y);
+                let block = Board::get_block(x, y);
 
                 let mut present = 0_u16;
 
@@ -303,7 +302,7 @@ impl SpeculationState {
 
             self.block_values[y * 3 + x] |= 1 << value;
 
-            for square in self.board.get_block(x, y) {
+            for square in Board::get_block(x, y) {
                 self.valid_moves[square.0] &= !(1 << value);
             }
         }
@@ -387,11 +386,11 @@ impl Solver {
                     self.speculation_stack.push(new);
 
                     break;
-                } else {
-                    self.speculation_stack.pop();
-                    if self.speculation_stack.is_empty() {
-                        return None;
-                    }
+                }
+
+                self.speculation_stack.pop();
+                if self.speculation_stack.is_empty() {
+                    return None;
                 }
             }
 
@@ -536,7 +535,7 @@ impl Solver {
                         let mut index = 0;
                         let mut count = 0;
 
-                        let block = state.board.get_block(x, y);
+                        let block = Board::get_block(x, y);
 
                         for (block_idx, square) in block.enumerate() {
                             let can_place = state.valid_moves[square.0] & 1 << i != 0;
@@ -545,7 +544,7 @@ impl Solver {
                         }
 
                         if count == 1 {
-                            let square = state.board.get_block(x, y).nth(index).unwrap();
+                            let square = Board::get_block(x, y).nth(index).unwrap();
 
                             state.make_move(Square(square.0), i);
                             *made_move = true;
