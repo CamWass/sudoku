@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Sudoku solver</title>
+  </head>
+  <body>
+    <div class="row">
+      <div class="col">
+        <div id="puzzle"></div>
+      </div>
+
+      <div class="col" style="margin-left: 1em">
+        <div>
+          <button type="button" id="clear">Clear</button>
+          <button type="button" id="solve">Solve</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .row {
+        display: flex;
+        flex-direction: row;
+        margin: 1em;
+      }
+
+      .col {
+        display: flex;
+        flex-direction: column;
+      }
+
+      button {
+        padding: 0.2em 1em;
+        border: 1px solid gray;
+        border-radius: 0.2em;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      #puzzle {
+        display: grid;
+        grid-template-rows: repeat(9, 1fr);
+        grid-template-columns: repeat(9, 1fr);
+      }
+
+      .square {
+        height: 2em;
+        width: 2em;
+      }
+    </style>
+
+    <script src="./bootstrap.js"></script>
+  </body>
+</html>
