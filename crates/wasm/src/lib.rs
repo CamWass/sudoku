@@ -1,8 +1,7 @@
 use solver::{solve as solve_inner, Board};
 use wasm_bindgen::prelude::*;
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+pub use wasm_bindgen_rayon::init_thread_pool;
 
 #[wasm_bindgen]
 pub fn solve(input: &[u8], output: &mut [u8]) {

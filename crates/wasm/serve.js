@@ -34,6 +34,9 @@ http
         contentType = "application/wasm";
       }
       res.setHeader("Content-Type", contentType);
+      // Required so we have access to SharedArrayBuffer for threading support.
+      res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+      res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
       res.writeHead(200);
       res.end(fileData);
     });

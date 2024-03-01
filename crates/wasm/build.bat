@@ -1,1 +1,2 @@
-wasm-pack build --out-dir www/wasm --target web
+npx cross-env RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+mutable-globals"^
+ rustup run nightly-2022-12-12 wasm-pack build --target web --out-dir www/wasm  -- --features default -Z build-std=panic_abort,std
