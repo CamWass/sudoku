@@ -23,13 +23,30 @@ const initial = [
   0,0,0, 0,0,0, 0,0,0,
 ];
 
+const colours = [
+  "#ffadad",
+  "#ffd6a5",
+  "#fdffb6",
+  "#caffbf",
+  "#96e8ff",
+  "#a0c4ff",
+  "#bdb2ff",
+  "#debcff",
+  "#ffc6ff",
+  "#ffa7dc",
+];
+
 const puzzleInput = document.getElementById("puzzle");
 
 // Create all 81 squares and pre-populate them with the initial puzzle.
 for (let i = 0; i < 81; i++) {
   const square = document.createElement("input");
   square.classList.add("square");
+  square.addEventListener("input", () => {
+    square.style.backgroundColor = colours[square.value || 0];
+  });
   square.value = initial[i] == 0 ? "" : initial[i];
+  square.style.backgroundColor = colours[initial[i]];
   puzzleInput.appendChild(square);
 }
 
@@ -37,6 +54,7 @@ for (let i = 0; i < 81; i++) {
 document.getElementById("clear").addEventListener("click", () => {
   puzzleInput.childNodes.forEach((node) => {
     node.value = "";
+    node.style.backgroundColor = "";
   });
 });
 
@@ -56,5 +74,6 @@ document.getElementById("solve").addEventListener("click", () => {
   // Update inputs.
   puzzleInput.childNodes.forEach((node, i) => {
     node.value = output[i] == 0 ? "" : output[i];
+    node.style.backgroundColor = colours[output[i]];
   });
 });
