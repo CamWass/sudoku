@@ -556,9 +556,10 @@ impl Solver {
     }
 }
 
-// From https://gamedev.stackexchange.com/a/138228
 pub fn generate_solved_board() -> [u8; 81] {
     let mut squares = [0; 81];
+
+    // Idea from https://gamedev.stackexchange.com/a/138228
 
     squares[..9].copy_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
     fastrand::shuffle(&mut squares[..9]);
@@ -582,6 +583,52 @@ pub fn generate_solved_board() -> [u8; 81] {
         i += 1;
         if i == 3 {
             i = 0;
+        }
+    }
+
+    let mut indices = [0, 1, 2];
+
+    // Shuffle rows in each block.
+    for block in 0..3 {
+        fastrand::shuffle(&mut indices);
+
+        let mut buffer = [0; 27];
+
+        for row in 0..3 {
+            let src_row_start = block * 27 + row * 9;
+            let dest_row = indices[row];
+            let dest_row_start = dest_row * 9;
+            buffer[dest_row_start..dest_row_start + 9]
+                .copy_from_slice(&squares[src_row_start..src_row_start + 9]);
+        }
+
+        let block_start = block * 27;
+
+        squares[block_start..block_start + 27].copy_from_slice(&buffer);
+    }
+
+    // Shuffle columns in each block.
+    for block in 0..3 {
+        fastrand::shuffle(&mut indices);
+
+        let mut buffer = [0; 27];
+
+        for col in 0..3 {
+            let src_col_start = block * 3 + col;
+            let dest_col = indices[col];
+            let dest_col_start = dest_col * 9;
+
+            for row in 0..9 {
+                buffer[dest_col * 9 + row] = squares[row * 9 + src_col_start];
+            }
+        }
+
+        for dest_col in 0..3 {
+            let dest_col_start = block * 3 + dest_col;
+
+            for row in 0..9 {
+                squares[row * 9 + dest_col_start] = buffer[dest_col * 9 + row];
+            }
         }
     }
 
