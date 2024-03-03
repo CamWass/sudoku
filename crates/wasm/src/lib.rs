@@ -4,7 +4,12 @@ use wasm_bindgen::prelude::*;
 pub use wasm_bindgen_rayon::init_thread_pool;
 
 #[wasm_bindgen]
-pub fn solve(input: &[u8], output: &mut [u8]) {
+pub fn generate_solved_board(output: &mut [u8]) {
+    output.copy_from_slice(&solver::generate_solved_board());
+}
+
+#[wasm_bindgen]
+pub fn solve(input: &[u8], output: &mut [u8]) -> bool {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
     // we will get better error messages if our code ever panics.
@@ -22,5 +27,6 @@ pub fn solve(input: &[u8], output: &mut [u8]) {
 
     let board = solve_inner(input, false);
 
-    output.copy_from_slice(&board.inner);
+    output.copy_from_slice(&board.0.inner);
+    board.1
 }

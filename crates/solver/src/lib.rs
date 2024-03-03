@@ -309,13 +309,13 @@ impl SpeculationState {
     }
 }
 
-pub fn solve(input: Board, print_dbg: bool) -> Board {
+pub fn solve(input: Board, print_dbg: bool) -> (Board, bool) {
     let mut initial = SpeculationState::new_initial(input);
 
     Solver::place_obvious(&mut initial);
 
     if initial.is_solved() {
-        return initial.board;
+        return (initial.board, initial.board.is_solved());
     }
 
     let mut initial_moves = Vec::new();
@@ -356,8 +356,8 @@ pub fn solve(input: Board, print_dbg: bool) -> Board {
     });
 
     match result {
-        Some(res) => res,
-        None => initial.board,
+        Some(res) => (res, true),
+        None => (initial.board, false),
     }
 }
 
@@ -554,4 +554,38 @@ impl Solver {
             }
         }
     }
+}
+
+// From https://gamedev.stackexchange.com/a/138228
+pub fn generate_solved_board() -> [u8; 81] {
+    let mut squares = [0; 81];
+
+    squares[..9].copy_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    fastrand::shuffle(&mut squares[..9]);
+
+    let mut i = 1;
+
+    for row in 1..9 {
+        let row_start = row * 9;
+        let prev_row_start = (row - 1) * 9;
+        let mut prev = [0; 9];
+        prev.copy_from_slice(&squares[prev_row_start..prev_row_start + 9]);
+        squares[row_start..row_start + 9].copy_from_slice(&prev);
+        let shift = match i {
+            0 => 1,
+            1 => 3,
+            2 => 3,
+            _ => unreachable!(),
+        };
+        squares[row_start..row_start + 9].rotate_left(shift);
+
+        i += 1;
+        if i == 3 {
+            i = 0;
+        }
+    }
+
+    debug_assert!(Board { inner: squares }.is_solved());
+
+    squares
 }

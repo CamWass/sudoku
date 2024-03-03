@@ -1,4 +1,8 @@
-import init, { initThreadPool, solve } from "./wasm/wasm.js";
+import init, {
+  initThreadPool,
+  solve,
+  generate_solved_board,
+} from "./wasm/wasm.js";
 
 await init();
 
@@ -36,6 +40,8 @@ const colours = [
   "#ffa7dc",
 ];
 
+const solvedMsg = document.getElementById("solved");
+
 const puzzleInput = document.getElementById("puzzle");
 
 // Create all 81 squares and pre-populate them with the initial puzzle.
@@ -43,6 +49,7 @@ for (let i = 0; i < 81; i++) {
   const square = document.createElement("input");
   square.classList.add("square");
   square.addEventListener("input", () => {
+    solvedMsg.textContent = "";
     square.style.backgroundColor = colours[square.value || 0];
   });
   square.value = initial[i] == 0 ? "" : initial[i];
@@ -56,6 +63,7 @@ document.getElementById("clear").addEventListener("click", () => {
     node.value = "";
     node.style.backgroundColor = "";
   });
+  solvedMsg.textContent = "";
 });
 
 // When the 'Solve' button is clicked, collect the puzzle from the inputs and
@@ -69,8 +77,22 @@ document.getElementById("solve").addEventListener("click", () => {
 
   // Submit to solver.
   const output = new Uint8Array(81);
-  solve(input, output);
+  const solved = solve(input, output);
 
+  solvedMsg.textContent = solved ? "Solved puzzle" : "Could not solve";
+  solvedMsg.style.color = solved ? "green" : "red";
+
+  // Update inputs.
+  puzzleInput.childNodes.forEach((node, i) => {
+    node.value = output[i] == 0 ? "" : output[i];
+    node.style.backgroundColor = colours[output[i]];
+  });
+});
+
+document.getElementById("randomSolved").addEventListener("click", () => {
+  solvedMsg.textContent = "";
+  const output = new Uint8Array(81);
+  generate_solved_board(output);
   // Update inputs.
   puzzleInput.childNodes.forEach((node, i) => {
     node.value = output[i] == 0 ? "" : output[i];

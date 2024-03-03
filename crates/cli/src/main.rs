@@ -22,12 +22,12 @@ fn main() {
     println!("Input:");
     input.print();
 
-    let board = solve(input, true);
+    let (board, solved) = solve(input, true);
 
     println!("Output:");
     board.print();
 
-    if board.is_solved() {
+    if solved {
         println!("Solved puzzle");
     } else {
         let old_empty_squares = input.empty_squares();
@@ -50,7 +50,7 @@ mod tests {
 
     fn test(input: [u8; 81], output: [u8; 81]) {
         let input = Board { inner: input };
-        let board = solve(input, false);
+        let board = solve(input, false).0;
         assert!(board.inner == output);
     }
 
