@@ -14,7 +14,21 @@
         <div>
           <button type="button" id="clear">Clear</button>
           <button type="button" id="solve">Solve</button>
-          <button type="button" id="randomSolved">Random solved</button>
+        </div>
+
+        <div>
+          <h3>Generate board</h3>
+          <div>
+            <label for="squaresToRemove">Squares to remove:</label>
+            <input
+              type="number"
+              name="squaresToRemove"
+              id="squaresToRemove"
+              max="80"
+              min="0"
+            />
+          </div>
+          <button type="button" id="randomBoard">Generate board</button>
         </div>
 
         <p>

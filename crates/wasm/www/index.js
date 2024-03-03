@@ -89,13 +89,34 @@ document.getElementById("solve").addEventListener("click", () => {
   });
 });
 
-document.getElementById("randomSolved").addEventListener("click", () => {
+const squaresToRemove = document.getElementById("squaresToRemove");
+
+document.getElementById("randomBoard").addEventListener("click", () => {
   solvedMsg.textContent = "";
   const output = new Uint8Array(81);
   generate_solved_board(output);
+
+  const numToRemove = squaresToRemove.value || 0;
+
+  const indicesToRemove = new Set();
+
+  while (indicesToRemove.size < numToRemove) {
+    indicesToRemove.add(getRandomInt(0, 81));
+  }
+
+  for (const i of indicesToRemove) {
+    output[i] = 0;
+  }
+
   // Update inputs.
   puzzleInput.childNodes.forEach((node, i) => {
     node.value = output[i] == 0 ? "" : output[i];
     node.style.backgroundColor = colours[output[i]];
   });
 });
+
+function getRandomInt(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
+}
