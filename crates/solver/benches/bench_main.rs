@@ -7,7 +7,7 @@ fn test_solve(puzzle: [u8; 81]) -> Board {
         inner: std::hint::black_box(puzzle),
     };
 
-    solve(input, false)
+    solve(input, false).0
 }
 
 pub fn bench(c: &mut Criterion) {
