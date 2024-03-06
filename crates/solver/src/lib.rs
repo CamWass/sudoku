@@ -616,7 +616,6 @@ pub fn generate_solved_board() -> [u8; 81] {
         for col in 0..3 {
             let src_col_start = block * 3 + col;
             let dest_col = indices[col];
-            let dest_col_start = dest_col * 9;
 
             for row in 0..9 {
                 buffer[dest_col * 9 + row] = squares[row * 9 + src_col_start];
