@@ -407,21 +407,76 @@ impl Solver {
     fn get_speculation(&mut self) -> Option<SpeculationState> {
         let prev = self.speculation_stack.last_mut().unwrap();
 
-        for (square, moves) in prev.valid_moves.iter().enumerate() {
-            if *moves != 0 {
-                for i in 1_u8..10 {
-                    if moves & 1 << i != 0 {
-                        let mut state = prev.clone();
-                        state.make_move(Square(square), i);
-                        // Either we solve the puzzle on this speculation path,
-                        // or this guess is wrong and is there for not a valid
-                        // move to try again.
-                        prev.valid_moves[square] &= !(1 << i);
-                        return Some(state);
-                    }
+        let res = prev
+            .valid_moves
+            .iter()
+            .map(|moves| moves.count_ones())
+            .filter(|moves| *moves > 6)
+            .enumerate()
+            .min_by_key(|(_, m)| *m);
+
+        if let Some((square, _)) = res {
+            let moves = prev.valid_moves[square];
+            for i in 1_u8..10 {
+                if moves & 1 << i != 0 {
+                    let mut state = prev.clone();
+                    state.make_move(Square(square), i);
+                    // Either we solve the puzzle on this speculation path,
+                    // or this guess is wrong and is there for not a valid
+                    // move to try again.
+                    prev.valid_moves[square] &= !(1 << i);
+                    return Some(state);
                 }
             }
         }
+
+        // let mut min_square = None;
+        // let mut min_moves = None;
+
+        // for (square, moves) in prev.valid_moves.iter().enumerate() {
+        //     let num_moves = moves.count_ones();
+        //     debug_assert_ne!(
+        //         num_moves,
+        //         6 + 1,
+        //         "Should not speculate when a square has only one valid move"
+        //     );
+        //     if num_moves == 6 + 2 {
+        //         for i in 1_u8..10 {
+        //             if *moves & 1 << i != 0 {
+        //                 let mut state = prev.clone();
+        //                 state.make_move(Square(square), i);
+        //                 // Either we solve the puzzle on this speculation path,
+        //                 // or this guess is wrong and is there for not a valid
+        //                 // move to try again.
+        //                 prev.valid_moves[square] &= !(1 << i);
+        //                 return Some(state);
+        //             }
+        //         }
+        //     }
+        //     if num_moves > 7 {
+        //         if let Some(min) = min_moves {
+        //             if min > num_moves {
+        //                 min_moves = Some(num_moves);
+        //                 min_square = Some(square);
+        //             }
+        //         }
+        //     }
+        // }
+
+        // if let Some(square) = min_square {
+        //     let moves = prev.valid_moves[square];
+        //     for i in 1_u8..10 {
+        //         if moves & 1 << i != 0 {
+        //             let mut state = prev.clone();
+        //             state.make_move(Square(square), i);
+        //             // Either we solve the puzzle on this speculation path,
+        //             // or this guess is wrong and is there for not a valid
+        //             // move to try again.
+        //             prev.valid_moves[square] &= !(1 << i);
+        //             return Some(state);
+        //         }
+        //     }
+        // }
 
         None
     }

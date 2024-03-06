@@ -22,6 +22,9 @@ pub fn bench(c: &mut Criterion) {
     group.bench_with_input("puzzle3", &INPUT3, |b, input| {
         b.iter(|| test_solve(*input));
     });
+    group.bench_with_input("empty", &EMPTY_PUZZLE, |b, input| {
+        b.iter(|| test_solve(*input));
+    });
 
     group.finish();
 }

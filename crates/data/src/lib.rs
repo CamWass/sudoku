@@ -1,6 +1,8 @@
 // pub static PUZZLES: &'static [(&'static [u8; 81], &'static [u8; 81])] =
 //     &[(&INPUT1, &OUTPUT1), (&INPUT2, &OUTPUT2)];
 
+pub static EMPTY_PUZZLE: [u8; 81] = [0; 81];
+
 // From Lovatts sudoku book (issue 232, puzzle #110, 'einstein' difficulty).
 #[rustfmt::skip] 
 pub static INPUT3: [u8; 81] = [
