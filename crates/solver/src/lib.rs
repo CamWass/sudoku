@@ -410,9 +410,9 @@ impl Solver {
         let res = prev
             .valid_moves
             .iter()
-            .map(|moves| moves.count_ones())
-            .filter(|moves| *moves > 6)
             .enumerate()
+            .map(|(s, moves)| (s, moves.count_ones()))
+            .filter(|(_, moves)| *moves > 6)
             .min_by_key(|(_, m)| *m);
 
         if let Some((square, _)) = res {
