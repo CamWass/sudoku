@@ -66,4 +66,12 @@ mod tests {
     fn test_puzzle3() {
         test(INPUT3, OUTPUT3);
     }
+    #[test]
+    fn test_empty() {
+        let input = Board {
+            inner: EMPTY_PUZZLE,
+        };
+        let board = solve(input, false).0;
+        assert!(board.is_solved());
+    }
 }
