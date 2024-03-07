@@ -430,54 +430,6 @@ impl Solver {
             }
         }
 
-        // let mut min_square = None;
-        // let mut min_moves = None;
-
-        // for (square, moves) in prev.valid_moves.iter().enumerate() {
-        //     let num_moves = moves.count_ones();
-        //     debug_assert_ne!(
-        //         num_moves,
-        //         6 + 1,
-        //         "Should not speculate when a square has only one valid move"
-        //     );
-        //     if num_moves == 6 + 2 {
-        //         for i in 1_u8..10 {
-        //             if *moves & 1 << i != 0 {
-        //                 let mut state = prev.clone();
-        //                 state.make_move(Square(square), i);
-        //                 // Either we solve the puzzle on this speculation path,
-        //                 // or this guess is wrong and is there for not a valid
-        //                 // move to try again.
-        //                 prev.valid_moves[square] &= !(1 << i);
-        //                 return Some(state);
-        //             }
-        //         }
-        //     }
-        //     if num_moves > 7 {
-        //         if let Some(min) = min_moves {
-        //             if min > num_moves {
-        //                 min_moves = Some(num_moves);
-        //                 min_square = Some(square);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if let Some(square) = min_square {
-        //     let moves = prev.valid_moves[square];
-        //     for i in 1_u8..10 {
-        //         if moves & 1 << i != 0 {
-        //             let mut state = prev.clone();
-        //             state.make_move(Square(square), i);
-        //             // Either we solve the puzzle on this speculation path,
-        //             // or this guess is wrong and is there for not a valid
-        //             // move to try again.
-        //             prev.valid_moves[square] &= !(1 << i);
-        //             return Some(state);
-        //         }
-        //     }
-        // }
-
         None
     }
 
