@@ -54,6 +54,23 @@ for (let i = 0; i < 81; i++) {
   });
   square.value = initial[i] == 0 ? "" : initial[i];
   square.style.backgroundColor = colours[initial[i]];
+
+  if (i % 3 == 0) {
+    if (i % 9 != 0) {
+      square.style.borderLeft = "2px solid black";
+    }
+  } else {
+    square.style.borderLeft = "1px solid lightblue";
+  }
+
+  if (Math.floor(i / 9) % 3 == 0) {
+    if (i > 8) {
+      square.style.borderTop = "2px solid black";
+    }
+  } else {
+    square.style.borderTop = "1px solid lightblue";
+  }
+
   puzzleInput.appendChild(square);
 }
 
