@@ -2,6 +2,7 @@ import init, {
   initThreadPool,
   solve,
   generate_solved_board,
+  count_solutions,
 } from "./wasm/wasm.js";
 
 await init();
@@ -74,8 +75,12 @@ for (let i = 0; i < 81; i++) {
   puzzleInput.appendChild(square);
 }
 
+const numSolutions = document.getElementById("numSolutions");
+
 // Clear the puzzle input when the 'clear' button is clicked.
 document.getElementById("clear").addEventListener("click", () => {
+  numSolutions.textContent = "N/A";
+
   puzzleInput.childNodes.forEach((node) => {
     node.value = "";
     node.style.backgroundColor = "";
@@ -86,6 +91,8 @@ document.getElementById("clear").addEventListener("click", () => {
 // When the 'Solve' button is clicked, collect the puzzle from the inputs and
 // submit it to the solver. Then update the inputs to reflect the output.
 document.getElementById("solve").addEventListener("click", () => {
+  numSolutions.textContent = "N/A";
+
   // Collect input.
   const input = new Uint8Array(81);
   puzzleInput.childNodes.forEach((node, i) => {
@@ -109,6 +116,8 @@ document.getElementById("solve").addEventListener("click", () => {
 const squaresToRemove = document.getElementById("squaresToRemove");
 
 document.getElementById("randomBoard").addEventListener("click", () => {
+  numSolutions.textContent = "N/A";
+
   solvedMsg.textContent = "";
   const output = new Uint8Array(81);
   generate_solved_board(output);
@@ -137,3 +146,15 @@ function getRandomInt(min, max) {
   const maxFloored = Math.floor(max);
   return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
 }
+
+document.getElementById("countSolutions").addEventListener("click", () => {
+  // Collect input.
+  const input = new Uint8Array(81);
+  puzzleInput.childNodes.forEach((node, i) => {
+    input[i] = node.value;
+  });
+
+  const solutions = count_solutions(input);
+
+  numSolutions.textContent = solutions;
+});

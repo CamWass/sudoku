@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use std::{
     hint::unreachable_unchecked,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
 };
 
 /*
@@ -382,7 +382,8 @@ impl Solver {
             }
 
             loop {
-                if let Some(new) = self.get_speculation() {
+                let prev = self.speculation_stack.last_mut().unwrap();
+                if let Some(new) = Self::get_speculation(prev) {
                     self.speculation_stack.push(new);
 
                     break;
@@ -404,9 +405,7 @@ impl Solver {
         }
     }
 
-    fn get_speculation(&mut self) -> Option<SpeculationState> {
-        let prev = self.speculation_stack.last_mut().unwrap();
-
+    fn get_speculation(prev: &mut SpeculationState) -> Option<SpeculationState> {
         let res = prev
             .valid_moves
             .iter()
@@ -641,4 +640,73 @@ pub fn generate_solved_board() -> [u8; 81] {
     debug_assert!(Board { inner: squares }.is_solved());
 
     squares
+}
+
+fn count_solutions_from_state(mut initial: SpeculationState, solutions: &AtomicU32) {
+    let mut speculation_stack = Vec::new();
+    Solver::place_obvious(&mut initial);
+
+    if initial.is_solved() {
+        solutions.fetch_add(1, Ordering::Relaxed);
+        return;
+    }
+
+    speculation_stack.push(initial);
+
+    loop {
+        loop {
+            let prev = speculation_stack.last_mut().unwrap();
+            if let Some(new) = Solver::get_speculation(prev) {
+                speculation_stack.push(new);
+
+                break;
+            }
+
+            speculation_stack.pop();
+            if speculation_stack.is_empty() {
+                return;
+            }
+        }
+
+        let state = speculation_stack.last_mut().unwrap();
+
+        Solver::place_obvious(state);
+
+        if state.is_solved() {
+            solutions.fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+    }
+}
+
+pub fn count_solutions(input: Board) -> u32 {
+    let mut initial = SpeculationState::new_initial(input);
+
+    Solver::place_obvious(&mut initial);
+
+    if initial.is_solved() {
+        return 1;
+    }
+
+    let mut initial_moves = Vec::new();
+
+    for (square, moves) in initial.valid_moves.iter().enumerate() {
+        if *moves != 0 {
+            for i in 1_u8..10 {
+                if moves & 1 << i != 0 {
+                    initial_moves.push((Square(square), i));
+                }
+            }
+        }
+    }
+
+    let solutions = AtomicU32::new(0);
+
+    initial_moves.into_par_iter().for_each(|initial_move| {
+        let mut initial_state = initial.clone();
+        initial_state.make_move(initial_move.0, initial_move.1);
+        count_solutions_from_state(initial_state, &solutions);
+    });
+
+    solutions.into_inner()
 }
