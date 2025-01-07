@@ -23,9 +23,6 @@ for each 'group' (row/column/block)
 3. Obvious until solved
     if trapped, revert speculation and all of its moves, try again (step 2)
 
-By cycling between obvious and speculation, we.... make our
-speculations more likely???
-
 If faced with many possible moves, pick them in most likely order.
 e.g. if there's a 50% chance a square is a 3, and a 33% chance it's
 a 9, choose 3 since it's more likely.
@@ -339,6 +336,7 @@ pub fn solve(input: Board, print_dbg: bool) -> (Board, bool) {
 
     let solved = AtomicBool::new(false);
 
+    // TODO: better parallelism? https://github.com/judofyr/spice/issues/5
     let result = initial_moves.into_par_iter().find_map_any(|initial_move| {
         if solved.load(Ordering::Relaxed) {
             return None;
