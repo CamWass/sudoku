@@ -29,7 +29,7 @@ const initial = [
 ];
 
 const colours = [
-  "#ffadad",
+  "#fff",
   "#ffd6a5",
   "#fdffb6",
   "#caffbf",
